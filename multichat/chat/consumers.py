@@ -1,7 +1,7 @@
 from django.conf import settings
 
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-
+import asyncio
 from .exceptions import ClientError
 from .utils import get_room_or_error
 
@@ -32,10 +32,11 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         # Store which rooms the user has joined on this connection
         self.rooms = set()
 
-    async def receive_json(self, content):
+    async def receive_json(self, content, **kwargs):
         """
         Called when we get a text frame. Channels will JSON-decode the payload
         for us and pass it as the first argument.
+        :param **kwargs:
         """
         # Messages will have a "command" key we can switch on
         command = content.get("command", None)
@@ -183,3 +184,24 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 "message": event["message"],
             },
         )
+
+
+class MyConsumer(AsyncJsonWebsocketConsumer):
+
+    async def connect(self):
+        # Are they logged in?
+        if self.scope["user"].is_anonymous:
+            # Reject the connection
+            await self.close()
+        else:
+            # Accept the connection
+            await self.accept()
+        # Store which rooms the user has joined on this connection
+
+    async def receive_json(self, content, **kwargs):
+        while True:
+            date = content.get("date")
+            content.get("update_time")
+            await self.send(date)
+            await asyncio.sleep(3)
+
